@@ -8,8 +8,8 @@ app = Flask(__name__)
 
 @app.route('/health', methods=['GET'])
 def health_check():
-    print("[MPI_Wrapper] Requisição recebida em /health")
-    return jsonify({"status": "ok", "message": "MPI service is running"})
+    print("[MPI_Wrapper] Requisição recebida em /health - nova build")
+    return jsonify({"status": "ok", "message": "MPI service is fucking awesome"})
 
 @app.route('/compute', methods=['POST'])
 def compute():
