@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: engine-mpi
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: engine-mpi
+  template:
+    metadata:
+      labels:
+        app: engine-mpi
+    spec:
+      containers:
+        - name: engine-mpi
+          image: jogodavida-mpi:v3
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 6600
+          resources:
+            limits:
+              cpu: "2"
+              memory: "512Mi"

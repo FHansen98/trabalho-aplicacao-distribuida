@@ -1,0 +1,34 @@
+# Usar uma imagem base do Ubuntu que é comum para compilação
+FROM ubuntu:22.04
+
+# Evita que a instalação peça interação do usuário
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Instala as dependências: compilador C (gcc) e as bibliotecas OpenMP e MPI
+RUN apt-get update && apt-get install -y gcc openmpi-bin libopenmpi-dev python3-pip
+
+# Define o diretório de trabalho
+WORKDIR /app
+
+# Copia o código-fonte para dentro do contêiner
+COPY jogodavidaOMPMPI.c .
+COPY mpi_wrapper.py .
+
+# Compila o código C
+# - mpicc: é o wrapper do compilador para aplicações MPI.
+# - -fopenmp: habilita o suporte a diretivas OpenMP.
+# - -o jogodavida_mpi: define o nome do arquivo executável de saída.
+RUN mpicc -o jogodavida_mpi -fopenmp jogodavidaOMPMPI.c
+
+# Instala a dependência do Flask para o wrapper
+RUN pip install Flask requests
+
+# Define o comando padrão para executar quando o contêiner iniciar
+# - mpirun: comando para executar um programa MPI.
+# - --allow-run-as-root: necessário para executar como root dentro do Docker.
+# - -np 4: especifica que queremos rodar com 4 processos MPI.
+# Expõe a porta que o servidor Flask usará
+EXPOSE 6600
+
+# Define o comando para iniciar o servidor web wrapper
+CMD ["python3", "mpi_wrapper.py"]

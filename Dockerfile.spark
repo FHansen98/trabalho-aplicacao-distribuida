@@ -1,0 +1,21 @@
+# Use uma imagem base oficial do Spark com Python
+# Esta imagem já inclui Spark, Python e as variáveis de ambiente necessárias
+FROM bitnami/spark:3-debian-11
+
+# Switch to the root user to avoid permission and user identity issues with Hadoop/Spark
+USER root
+
+
+# Define o diretório de trabalho dentro do contêiner
+WORKDIR /app
+
+# Copia o script Python do Jogo da Vida para o diretório de trabalho
+COPY jogodavidaspark.py .
+
+# Instala a dependência do Flask
+RUN pip install Flask
+
+# O comando ENTRYPOINT define o que será executado quando o contêiner iniciar.
+# Usamos spark-submit para rodar a aplicação PySpark.
+# --master local[*] diz ao Spark para usar todos os núcleos disponíveis no modo local.
+ENTRYPOINT ["spark-submit", "--master", "local[*]", "jogodavidaspark.py"]
