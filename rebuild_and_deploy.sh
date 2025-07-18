@@ -40,7 +40,7 @@ kubectl delete deployment "${SOCKET_DEPLOY_NAME}" "${MPI_DEPLOY_NAME}" --ignore-
 # Build Docker images
 # ---------------------------
 info "Building Docker images with tag: ${VERSION} …"
-docker build -t "${SOCKET_IMAGE_TAG}" -f Dockerfile.server .
+docker build -t "${SOCKET_IMAGE_TAG}" -f socket-server/Dockerfile.server socket-server/
 docker build -t "${MPI_IMAGE_TAG}"    -f mpi/Dockerfile.mpi mpi/
 
 # ---------------------------
@@ -55,7 +55,7 @@ kind load docker-image "${MPI_IMAGE_TAG}"
 # ---------------------------
 info "Applying Kubernetes manifests …"
 # Services first (idempotent)
-kubectl apply -f socket_server_deployment.yaml
+kubectl apply -f socket-server/socket_server_deployment.yaml
 kubectl apply -f mpi/mpi-service.yaml
 kubectl apply -f mpi/mpi_deployment.yaml
 
