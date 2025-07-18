@@ -11,10 +11,10 @@ spark = SparkSession.builder.appName("GameOfLifeSpark").getOrCreate()
 sc = spark.sparkContext
 
 # --- Configurações do Jogo da Vida ---
-# Tamanho do tabuleiro (mesmo valor do NGER no .c)
-TAM = 2048
-# Número de gerações para simular
-NGER = 5
+# Tamanho do tabuleiro (mínimo para execução leve)
+TAM = 8
+# Número de gerações para simular (mínimo)
+NGER = 1
 
 def get_neighbors(x, y, max_x, max_y):
     """Gera os 8 vizinhos de uma célula (x, y)."""
@@ -73,8 +73,8 @@ def next_generation(board_rdd, N):
 def compute():
     # Extrai parâmetros da requisição JSON
     params = request.get_json()
-    N = params.get("tamanho", 128)  # Tamanho do tabuleiro
-    generations = params.get("geracoes", 5) # Número de gerações
+    N = params.get("tamanho", 8)  # Tamanho do tabuleiro
+    generations = params.get("geracoes", 1) # Número de gerações
 
     # Inicializa o tabuleiro com o padrão "glider"
     board = initialize_glider(N)
@@ -103,6 +103,29 @@ def compute():
         "celulas_vivas": live_cells,
         "tempo_computacao_s": computation_time
     })
+
+def run_cli():
+    # Modo mais leve: apenas tam=8
+    tam = 8
+    t0 = time.time()
+    board = initialize_glider(tam)
+    board_rdd = sc.parallelize(board)
+    t1 = time.time()
+    ngen = 1
+    for _ in range(ngen):
+        board_rdd = next_generation(board_rdd, tam)
+        board_rdd.cache()
+        board_rdd.count()
+    t2 = time.time()
+    final_cells = board_rdd.collect()
+    cells_set = set(final_cells)
+    resultado_correto = correto(cells_set, tam)
+    t3 = time.time()
+    print("**RESULTADO {}**".format("CORRETO" if resultado_correto else "ERRADO"))
+    print("tam={}; tempos: init={:7.7f}, comp={:7.7f}, fim={:7.7f}, tot={:7.7f} ".format(
+        tam, t1 - t0, t2 - t1, t3 - t2, t3 - t0
+    ))
+    sys.stdout.flush()
 
 if __name__ == "__main__":
     # O host '0.0.0.0' torna o servidor acessível externamente (dentro do cluster)

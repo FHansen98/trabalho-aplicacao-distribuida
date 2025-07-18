@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: engine-spark
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: engine-spark
+  template:
+    metadata:
+      labels:
+        app: engine-spark
+    spec:
+      containers:
+        - name: engine-spark
+          image: jogodavida-spark:v1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 6500
+          resources:
+            limits:
+              cpu: "2"
