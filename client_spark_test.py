@@ -7,7 +7,7 @@ def main():
 
     request_data = {
         "engine": "spark",
-        "tamanho": 8,
+        "tamanho": 3,
         "geracoes": 1
     }
     

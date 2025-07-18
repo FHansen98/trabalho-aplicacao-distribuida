@@ -19,5 +19,9 @@ spec:
           ports:
             - containerPort: 6500
           resources:
-            limits:
-              cpu: "2"
+            requests: # O que o Pod idealmente precisa para agendamento
+              cpu: "1" # Pede 1 núcleo (ou 1000m)
+              memory: "1Gi" # Exemplo: 1 GB de RAM
+            limits: # O máximo que o Pod pode usar
+              cpu: "2" # Limite de 2 núcleos (ou 2000m)
+              memory: "2Gi" # Exemplo: Limite de 2 GB de RAM

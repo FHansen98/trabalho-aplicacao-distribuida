@@ -2,6 +2,7 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, sum as _sum
 from flask import Flask, request, jsonify
 import time
+import sys
 
 # Inicializa o Flask App
 app = Flask(__name__)
@@ -65,6 +66,21 @@ def initialize_glider(N):
     ]
     return initial_glider
 
+def correto(cells_set, N):
+    """Verifica se o tabuleiro final possui o glider nas
+    cinco posições esperadas (versão 0-indexada) e exatamente 5
+    células vivas.
+    Esperado: (N-3,N-2) (N-2,N-1) (N-1,N-3) (N-1,N-2) (N-1,N-1)
+    """
+    expected = {
+        (N - 3, N - 2),
+        (N - 2, N - 1),
+        (N - 1, N - 3),
+        (N - 1, N - 2),
+        (N - 1, N - 1),
+    }
+    return len(cells_set) == 5 and expected.issubset(cells_set)
+
 def next_generation(board_rdd, N):
     # Executa um passo (uma geração) do Jogo da Vida.
     return game_of_life_step(board_rdd)
@@ -73,56 +89,65 @@ def next_generation(board_rdd, N):
 def compute():
     # Extrai parâmetros da requisição JSON
     params = request.get_json()
-    N = params.get("tamanho", 8)  # Tamanho do tabuleiro
-    generations = params.get("geracoes", 1) # Número de gerações
+    N = params.get("tamanho", 8)
+    generations = params.get("geracoes", 1)
 
-    # Inicializa o tabuleiro com o padrão "glider"
+    # t0 – antes da criação do tabuleiro
+    t0 = time.time()
     board = initialize_glider(N)
 
-    # Converte a lista de listas para um RDD
+    # Cria RDD
     board_rdd = sc.parallelize(board)
+    t1 = time.time()  # fim init
 
-    # Executa as gerações
-    start_time = time.time()
+    # Executa gerações
     for _ in range(generations):
         board_rdd = next_generation(board_rdd, N)
         board_rdd.cache()
-        board_rdd.count() # Ação para forçar a computação
-    
-    computation_time = time.time() - start_time
+        board_rdd.count()
+    t2 = time.time()  # fim comp
 
-    # Coleta os resultados e conta as células vivas
-    final_board = board_rdd.collect()
-    live_cells = len(final_board)
+    # Coleta resultados
+    final_cells = set(board_rdd.collect())
+    live_cells = len(final_cells)
 
-    # Retorna o resultado como JSON
+    # Verifica corretude
+    resultado_ok = correto(final_cells, N)
+    t3 = time.time()  # fim finish
+
     return jsonify({
         "engine": "spark",
         "tamanho_tabuleiro": N,
         "numero_geracoes": generations,
         "celulas_vivas": live_cells,
-        "tempo_computacao_s": computation_time
+        "correto": resultado_ok,
+        "init_time_s": t1 - t0,
+        "comp_time_s": t2 - t1,
+        "finish_time_s": t3 - t2,
+        "total_time_s": t3 - t0
     })
 
 def run_cli():
-    # Modo mais leve: apenas tam=8
     tam = 8
+    ngen = 1  # gerações
+
     t0 = time.time()
     board = initialize_glider(tam)
     board_rdd = sc.parallelize(board)
     t1 = time.time()
-    ngen = 1
+
     for _ in range(ngen):
         board_rdd = next_generation(board_rdd, tam)
         board_rdd.cache()
         board_rdd.count()
     t2 = time.time()
-    final_cells = board_rdd.collect()
-    cells_set = set(final_cells)
-    resultado_correto = correto(cells_set, tam)
+
+    final_cells = set(board_rdd.collect())
+    resultado_ok = correto(final_cells, tam)
     t3 = time.time()
-    print("**RESULTADO {}**".format("CORRETO" if resultado_correto else "ERRADO"))
-    print("tam={}; tempos: init={:7.7f}, comp={:7.7f}, fim={:7.7f}, tot={:7.7f} ".format(
+
+    print("**RESULTADO {}**".format("CORRETO" if resultado_ok else "ERRADO"))
+    print("tam={}; tempos: init={:7.7f}, comp={:7.7f}, fim={:7.7f}, tot={:7.7f}".format(
         tam, t1 - t0, t2 - t1, t3 - t2, t3 - t0
     ))
     sys.stdout.flush()
