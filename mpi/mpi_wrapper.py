@@ -23,7 +23,6 @@ def compute():
     geracoes = params.get("geracoes", 10)
     print(f"[MPI_Wrapper] Parâmetros: tamanho={tamanho}, geracoes={geracoes}")
 
-    # O nome do executável deve corresponder ao que está no Dockerfile.mpi
     cmd = [
         "mpirun", "--allow-run-as-root", "-np", "2",
         "/app/jogodavida_mpi", str(tamanho), str(geracoes)
